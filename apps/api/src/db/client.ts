@@ -7,20 +7,48 @@
 
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
+import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from './schema';
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
-});
+let pool: Pool | null = null;
+let dbInstance: NodePgDatabase<typeof schema> | null = null;
 
-export const db = drizzle(pool, { schema });
+function getPool(): Pool {
+  if (!pool) {
+    const connectionString = process.env.DATABASE_URL;
+    
+    if (!connectionString) {
+      throw new Error('DATABASE_URL not set in environment variables');
+    }
+    
+    pool = new Pool({
+      connectionString,
+      max: 20,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 2000,
+    });
+  }
+  
+  return pool;
+}
+
+export function getDb(): NodePgDatabase<typeof schema> {
+  if (!dbInstance) {
+    dbInstance = drizzle(getPool(), { schema });
+  }
+  return dbInstance;
+}
+
+// Backward compatibility
+export const db = new Proxy({} as NodePgDatabase<typeof schema>, {
+  get(target, prop) {
+    return getDb()[prop as keyof NodePgDatabase<typeof schema>];
+  }
+});
 
 export async function checkDatabaseConnection(): Promise<boolean> {
   try {
-    await pool.query('SELECT 1');
+    await getPool().query('SELECT 1');
     return true;
   } catch (error) {
     console.error('Database connection failed:', error);

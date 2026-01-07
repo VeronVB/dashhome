@@ -12,7 +12,7 @@
   import { Activity, Cpu, HardDrive, Thermometer } from 'lucide-svelte';
   import CircularProgress from '$lib/components/UI/CircularProgress.svelte';
 
-  export let widgetId: string;
+  export const widgetId = '';
 
   let stats: SystemStats | null = null;
   let loading = true;

@@ -23,6 +23,7 @@
   import { sidebarOpen } from '$lib/stores/sidebar';
   import { cubicOut } from 'svelte/easing';
   import { fade, fly } from 'svelte/transition';
+  import { X } from 'lucide-svelte';
 
   interface NavItem {
     href: string;
@@ -76,6 +77,8 @@
 {#if isOpen}
   <div 
     class="sidebar-overlay"
+    role="button"
+    tabindex="0"
     on:click={closeSidebar}
     on:keydown={handleKeydown}
     transition:fade={{ duration: 200 }}

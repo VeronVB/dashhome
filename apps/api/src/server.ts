@@ -5,11 +5,16 @@
  * @date 2025-01-07
  */
 
+import { config } from 'dotenv';
+import { resolve } from 'path';
+
+config({ path: resolve(__dirname, '../.env') });
+
 import Fastify from 'fastify';
 import { logger, requestLogger } from './utils/logger';
 import { checkDatabaseConnection } from './db/client';
 import { cacheService } from './services/cache.service';
-
+import { serializerCompiler, validatorCompiler, ZodTypeProvider } from 'fastify-type-provider-zod';
 // Import plugins
 import corsPlugin from './plugins/cors';
 import swaggerPlugin from './plugins/swagger';
@@ -29,44 +34,49 @@ import notesRoutes from './routes/notes';
 const fastify = Fastify({
   logger: requestLogger,
   trustProxy: true,
-});
+}).withTypeProvider<ZodTypeProvider>();
+
+// Dodaj przed pluginami
+fastify.setValidatorCompiler(validatorCompiler);
+fastify.setSerializerCompiler(serializerCompiler);
 
 const port = parseInt(process.env.PORT || '3000');
 const host = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost';
 
 async function startServer() {
   try {
-    // Register plugins
+    console.log('Registering plugins...');
     await fastify.register(corsPlugin);
+    console.log('✓ CORS registered');
+    
     await fastify.register(swaggerPlugin);
+    console.log('✓ Swagger registered');
+    
     await fastify.register(authPlugin);
-
-    // Register routes
+    console.log('✓ Auth registered');
+    
+    console.log('Registering routes...');
     await fastify.register(healthRoutes);
-    await fastify.register(widgetRoutes);
-    await fastify.register(systemRoutes);
-    await fastify.register(dockerRoutes);
-    await fastify.register(proxmoxRoutes);
-    await fastify.register(piholeRoutes);
-    await fastify.register(qbittorrentRoutes);
-    await fastify.register(weatherRoutes);
-    await fastify.register(notesRoutes);
-
-    // Health check before starting
+    console.log('✓ Health routes registered');
+    
+    // Register routes
+    await fastify.register(widgetRoutes, { prefix: '/api' });
+    await fastify.register(systemRoutes, { prefix: '/api' });
+    await fastify.register(dockerRoutes, { prefix: '/api' });
+    await fastify.register(proxmoxRoutes, { prefix: '/api' });
+    await fastify.register(piholeRoutes, { prefix: '/api' });
+    await fastify.register(qbittorrentRoutes, { prefix: '/api' });
+    await fastify.register(weatherRoutes, { prefix: '/api' });
+    await fastify.register(notesRoutes, { prefix: '/api' });
+    
     const dbHealthy = await checkDatabaseConnection();
-    if (!dbHealthy) {
-      logger.error('Database connection failed, exiting...');
-      process.exit(1);
-    }
-
-    logger.info('Database connection established');
-
-    // Start server
+    console.log('DB healthy:', dbHealthy);
+    
     await fastify.listen({ port, host });
-    logger.info(`Server listening on ${host}:${port}`);
-    logger.info(`API documentation available at http://${host}:${port}/docs`);
-
+    console.log('✓ Server started on', host, port);
+    
   } catch (error) {
+    console.error('DETAILED ERROR:', error);
     logger.error('Failed to start server:', error);
     process.exit(1);
   }

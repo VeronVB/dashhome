@@ -5,18 +5,45 @@
  * @date 2025-01-07
  */
 
+import { config } from 'dotenv';
+import { resolve } from 'path';
+
+// Załaduj .env z folderu apps/api
+config({ path: resolve(__dirname, '../../.env') });
+
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
-import { db } from './client';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import { Pool } from 'pg';
 
 async function runMigrations() {
   console.log('Running database migrations...');
   
-  try {
-    await migrate(db, { migrationsFolder: './migrations' });
-    console.log('Migrations completed successfully');
-  } catch (error) {
-    console.error('Migration failed:', error);
+  // Debug
+  console.log('DATABASE_URL:', process.env.DATABASE_URL ? '✓ SET' : '✗ NOT SET');
+  
+  if (!process.env.DATABASE_URL) {
+    console.error('ERROR: DATABASE_URL not set in .env file');
     process.exit(1);
+  }
+  
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+  });
+
+  const db = drizzle(pool);
+  
+  try {
+    // Test connection
+    await pool.query('SELECT 1');
+    console.log('✓ Database connection successful');
+    
+    await migrate(db, { migrationsFolder: './migrations' });
+    console.log('✓ Migrations completed successfully');
+  } catch (error) {
+    console.error('✗ Migration failed:', error);
+    process.exit(1);
+  } finally {
+    await pool.end();
   }
 }
 

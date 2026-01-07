@@ -6,11 +6,12 @@
 -->
 
 <script lang="ts">
+  import { onMount, onDestroy, createEventDispatcher } from 'svelte';
   import { page } from '$app/stores';
-  import { Search, Plus, Settings, Menu, X, Sun, Moon, Palette } from 'lucide-svelte';
+  import { Search, Plus, Settings, Menu, X, Palette } from 'lucide-svelte';
   import { sidebarOpen, toggleSidebar } from '$lib/stores/sidebar';
   import { theme, setTheme, type Theme } from '$lib/stores/theme';
-  import { createEventDispatcher } from 'svelte';
+  import { browser } from '$app/environment';
 
   export let showSearch = true;
   export let showAddWidget = true;
@@ -52,10 +53,24 @@
     }
   };
 
-  $: if (themeDropdownOpen) {
-    document.addEventListener('click', handleClickOutside);
-  } else {
-    document.removeEventListener('click', handleClickOutside);
+  onMount(() => {
+    if (browser && themeDropdownOpen) {
+      document.addEventListener('click', handleClickOutside);
+    }
+  });
+
+  onDestroy(() => {
+    if (browser) {
+      document.removeEventListener('click', handleClickOutside);
+    }
+  });
+
+  $: if (browser) {
+    if (themeDropdownOpen) {
+      document.addEventListener('click', handleClickOutside);
+    } else {
+      document.removeEventListener('click', handleClickOutside);
+    }
   }
 </script>
 
@@ -76,7 +91,7 @@
 
     {#if showSearch}
       <div class="search-container">
-        <Search size={18} class="search-icon" />
+        <Search size={18} />
         <input
           type="text"
           bind:value={searchQuery}
@@ -134,7 +149,7 @@
 
     <button
       class="settings-btn"
-      on:click={() => window.location.href = '/settings'}
+      on:click={() => browser && (window.location.href = '/settings')}
       aria-label="Settings"
     >
       <Settings size={20} />
@@ -207,7 +222,7 @@
     width: 100%;
   }
 
-  .search-icon {
+  .search-container :global(svg) {
     position: absolute;
     left: 0.75rem;
     color: var(--text-muted);

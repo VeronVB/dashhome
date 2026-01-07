@@ -11,7 +11,7 @@
   import type { GridStackOptions, GridStackWidget, GridStackEvent } from 'gridstack';
   import 'gridstack/dist/gridstack.min.css';
   import { apiClient } from '$lib/api/client';
-  import { widgets, setWidgets, updateWidget } from '$lib/stores/widgets';
+  import { widgets, setWidgets, updateWidget as updateWidgetStore } from '$lib/stores/widgets';
   import { browser } from '$app/environment';
 
   export let options: Partial<GridStackOptions> = {};
@@ -52,10 +52,10 @@
             x: item.x || 0,
             y: item.y || 0,
             w: item.w || 1,
-            h: item.y || 1,
+            h: item.h || 1,
           },
         };
-        updateWidget(widget.id, updatedWidget);
+        updateWidgetStore(widget.id, updatedWidget);
       }
     });
 
