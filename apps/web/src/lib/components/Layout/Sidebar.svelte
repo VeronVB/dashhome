@@ -21,6 +21,7 @@
     Terminal
   } from 'lucide-svelte';
   import { sidebarOpen } from '$lib/stores/sidebar';
+  import { cubicOut } from 'svelte/easing';
   import { fade, fly } from 'svelte/transition';
 
   interface NavItem {

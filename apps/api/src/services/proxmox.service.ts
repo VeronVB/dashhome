@@ -8,6 +8,7 @@
 import axios, { AxiosInstance } from 'axios';
 import { logger } from '../utils/logger';
 import { cacheService } from './cache.service';
+import https from 'https';
 
 export interface ProxmoxNode {
   node: string;
@@ -59,7 +60,7 @@ class ProxmoxService {
         headers: {
           'Authorization': `PVEAPIToken=${this.tokenId}=${this.tokenSecret}`,
         },
-        httpsAgent: new (require('https').Agent)({
+        httpsAgent: new https.Agent({
           rejectUnauthorized: false, // Proxmox uses self-signed certificates
         }),
       });

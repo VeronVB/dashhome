@@ -18,7 +18,6 @@
   $: circumference = 2 * Math.PI * radius;
   $: strokeDasharray = circumference;
   $: strokeDashoffset = circumference - (percentage / 100) * circumference;
-  $: strokeDashoffset = circumference - (percentage / 100) * circumference;
 </script>
 
 <div class="circular-progress" style="width: {size}px; height: {size}px;">

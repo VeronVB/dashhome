@@ -10,7 +10,7 @@
   import { apiClient } from '$lib/api/client';
   import type { SystemStats } from '$lib/api/client';
   import { Activity, Cpu, HardDrive, Thermometer } from 'lucide-svelte';
-  import { CircularProgress } from '$lib/components/UI/CircularProgress.svelte';
+  import CircularProgress from '$lib/components/UI/CircularProgress.svelte';
 
   export let widgetId: string;
 

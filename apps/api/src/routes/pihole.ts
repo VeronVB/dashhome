@@ -9,6 +9,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import axios from 'axios';
 import { cacheService } from '../services/cache.service';
 import { logger } from '../utils/logger';
+import { z } from 'zod';
 
 interface PiHoleStats {
   queries_today: number;
