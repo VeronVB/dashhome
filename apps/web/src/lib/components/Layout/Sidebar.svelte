@@ -8,22 +8,13 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { 
-    Home, 
-    Package, 
-    Server, 
-    Activity, 
-    ShieldCheck, 
-    Download, 
-    FileText, 
-    Settings,
-    User,
-    BarChart3,
-    Terminal
+    Home, Package, Server, ShieldCheck, 
+    Download, FileText, Settings, User, 
+    BarChart3, Terminal, X 
   } from 'lucide-svelte';
   import { sidebarOpen } from '$lib/stores/sidebar';
   import { cubicOut } from 'svelte/easing';
   import { fade, fly } from 'svelte/transition';
-  import { X } from 'lucide-svelte';
 
   interface NavItem {
     href: string;
@@ -43,34 +34,22 @@
     { href: '/settings', label: 'Ustawienia', icon: Settings },
   ];
 
+  // Grupowanie elementów pozostaje bez zmian
   const groupedItems = navItems.reduce((acc, item) => {
     const category = item.category || 'Main';
-    if (!acc[category]) {
-      acc[category] = [];
-    }
+    if (!acc[category]) acc[category] = [];
     acc[category].push(item);
     return acc;
   }, {} as Record<string, NavItem[]>);
 
-  $: currentPath = $page.url.pathname;
   $: isOpen = $sidebarOpen;
-
-  const isActive = (href: string) => {
-    if (href === '/') {
-      return currentPath === '/';
-    }
-    return currentPath.startsWith(href);
-  };
 
   const closeSidebar = () => {
     sidebarOpen.set(false);
   };
 
-  // Close sidebar on escape key
   const handleKeydown = (event: KeyboardEvent) => {
-    if (event.key === 'Escape') {
-      closeSidebar();
-    }
+    if (event.key === 'Escape') closeSidebar();
   };
 </script>
 
@@ -95,11 +74,7 @@
       <Terminal size={24} />
       <h1>Dashboard</h1>
     </div>
-    <button 
-      class="close-btn"
-      on:click={closeSidebar}
-      aria-label="Close sidebar"
-    >
+    <button class="close-btn" on:click={closeSidebar} aria-label="Zamknij">
       <X size={20} />
     </button>
   </div>
@@ -116,8 +91,13 @@
               <a
                 href={item.href}
                 class="nav-link"
-                class:active={isActive(item.href)}
-                aria-current={isActive(item.href) ? 'page' : undefined}
+                class:active={item.href === '/' 
+                  ? $page.url.pathname === '/' 
+                  : $page.url.pathname.startsWith(item.href)}
+                aria-current={($page.url.pathname === item.href) ? 'page' : undefined}
+                on:click={() => {
+                  if (window.innerWidth < 769) closeSidebar();
+                }}
               >
                 <svelte:component this={item.icon} size={20} />
                 <span>{item.label}</span>
@@ -131,9 +111,7 @@
 
   <div class="sidebar-footer">
     <div class="user-info">
-      <div class="user-avatar">
-        <User size={20} />
-      </div>
+      <div class="user-avatar"><User size={20} /></div>
       <div class="user-details">
         <span class="user-name">Michał</span>
         <span class="user-role">Administrator</span>

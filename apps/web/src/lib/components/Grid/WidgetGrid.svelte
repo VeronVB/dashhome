@@ -6,7 +6,7 @@
 -->
 
 <script lang="ts">
-  import { onMount, onDestroy, createEventDispatcher } from 'svelte';
+  import { onMount, onDestroy, createEventDispatcher, tick } from 'svelte';
   import { GridStack } from 'gridstack';
   import type { GridStackOptions, GridStackWidget, GridStackEvent } from 'gridstack';
   import 'gridstack/dist/gridstack.min.css';
@@ -18,28 +18,28 @@
   export let editable = true;
 
   const dispatch = createEventDispatcher();
-
   let grid: GridStack | null = null;
   let gridElement: HTMLElement;
-  let saveTimeout: NodeJS.Timeout;
+  let saveTimeout: any;
 
   const defaultOptions: GridStackOptions = {
     cellHeight: 80,
-    verticalMargin: 10,
+    margin: 10,
     column: 12,
     minRow: 1,
     animate: true,
     float: true,
     disableOneColumnMode: true,
-    resizable: {
-      handles: 'se',
-    },
-    draggable: {
-      handle: '.widget-drag-handle',
-    },
+    acceptWidgets: true,
+    dragIn: '.newWidget', // Do przyszłego przeciągania z menu
+    resizable: { handles: 'se' },
+    draggable: { handle: '.widget-drag-handle' },
     ...options,
   };
 
+  /**
+   * Obsługa zmian pozycji/rozmiaru przez GridStack
+   */
   const handleChange = (event: GridStackEvent, items: GridStackWidget[]) => {
     if (!browser || !grid) return;
 
@@ -49,143 +49,105 @@
         const updatedWidget = {
           ...widget,
           position: {
-            x: item.x || 0,
-            y: item.y || 0,
-            w: item.w || 1,
-            h: item.h || 1,
+            x: item.x ?? widget.position.x,
+            y: item.y ?? widget.position.y,
+            w: item.w ?? widget.position.w,
+            h: item.h ?? widget.position.h,
           },
         };
         updateWidgetStore(widget.id, updatedWidget);
       }
     });
 
-    // Debounce save to avoid excessive API calls
+    // Debounce zapisu do API (2 sekundy bezczynności)
     clearTimeout(saveTimeout);
-    saveTimeout = setTimeout(async () => {
-      await saveWidgetLayout();
-    }, 2000);
+    saveTimeout = setTimeout(saveWidgetLayout, 2000);
 
     dispatch('change', { items });
   };
 
-  const handleAdded = (event: GridStackEvent, items: GridStackWidget[]) => {
-    dispatch('added', { items });
-  };
-
-  const handleRemoved = (event: GridStackEvent, items: GridStackWidget[]) => {
-    dispatch('removed', { items });
-  };
-
   const saveWidgetLayout = async () => {
     try {
-      // Save each widget's position
-      for (const widget of $widgets) {
-        await apiClient.updateWidget(widget.id, {
-          position: widget.position,
-        });
-      }
+      // Zapisujemy pozycje wszystkich widgetów
+      await Promise.all(
+        $widgets.map(w => apiClient.updateWidget(w.id, { position: w.position }))
+      );
     } catch (error) {
       console.error('Failed to save widget layout:', error);
     }
   };
 
-  const loadWidgetLayout = async () => {
-    try {
-      const widgetList = await apiClient.getWidgets();
-      setWidgets(widgetList);
-      
-      if (grid) {
-        // Clear existing widgets
-        grid.removeAll();
-        
-        // Add widgets to grid
-        const gridItems = widgetList.map(widget => ({
-          id: widget.id,
-          x: widget.position.x,
-          y: widget.position.y,
-          w: widget.position.w,
-          h: widget.position.h,
-          content: '', // Content will be rendered by Svelte component
-        }));
-        
-        grid.load(gridItems);
+  /**
+   * Kluczowa funkcja: Synchronizacja DOM Svelte z GridStack
+   */
+  const syncWithGridStack = async () => {
+    if (!grid) return;
+
+    await tick(); // Czekamy na wyrenderowanie slotów przez Svelte
+
+    // Znajdujemy wszystkie elementy z klasą .grid-stack-item, które nie są jeszcze zarządzane
+    const items = gridElement.querySelectorAll('.grid-stack-item');
+    
+    grid.batchUpdate();
+    items.forEach((el: any) => {
+      if (!el.gridstackNode) {
+        grid?.makeWidget(el);
       }
-    } catch (error) {
-      console.error('Failed to load widget layout:', error);
-    }
+    });
+    grid.commit();
   };
 
   onMount(async () => {
     if (!browser || !gridElement) return;
 
-    // Initialize GridStack
+    // 1. Inicjalizacja instancji GridStack
     grid = GridStack.init(defaultOptions, gridElement);
 
-    // Set up event listeners
+    // 2. Rejestracja eventów
     grid.on('change', handleChange);
-    grid.on('added', handleAdded);
-    grid.on('removed', handleRemoved);
+    
+    // 3. Pobranie danych z API (tylko jeśli store jest pusty, np. pierwsze wejście)
+    if ($widgets.length === 0) {
+      try {
+        const widgetList = await apiClient.getWidgets();
+        setWidgets(widgetList);
+      } catch (error) {
+        console.error('Failed to load widgets:', error);
+      }
+    }
 
-    // Load existing widgets
-    await loadWidgetLayout();
+    // 4. Synchronizacja wyrenderowanych elementów
+    await syncWithGridStack();
 
-    // Make grid responsive
+    // Responsywność kolumn
     const updateColumnCount = () => {
       if (!grid) return;
-      
       const width = window.innerWidth;
-      let columns = 12;
-      
-      if (width < 641) {
-        columns = 1; // Mobile
-      } else if (width < 769) {
-        columns = 6; // Tablet
-      }
-      
-      grid.column(columns);
+      grid.column(width < 641 ? 1 : width < 1025 ? 6 : 12);
     };
 
-    updateColumnCount();
     window.addEventListener('resize', updateColumnCount);
+    updateColumnCount();
 
     return () => {
       window.removeEventListener('resize', updateColumnCount);
       if (grid) {
         grid.off('change', handleChange);
-        grid.off('added', handleAdded);
-        grid.off('removed', handleRemoved);
-        grid.destroy();
+        grid.destroy(false); // Niszczymy GridStack, ale zostawiamy DOM dla Svelte
       }
     };
   });
 
-  // Expose grid methods
-  export const addWidget = (widget: GridStackWidget) => {
-    if (grid) {
-      grid.addWidget(widget);
-    }
-  };
-
-  export const removeWidget = (id: string) => {
-    if (grid) {
-      const item = grid.getGridItems().find(el => el.getAttribute('gs-id') === id);
-      if (item) {
-        grid.removeWidget(item);
-      }
-    }
-  };
-
-  export const updateWidget = (id: string, updates: Partial<GridStackWidget>) => {
-    if (grid) {
-      grid.update(id, updates);
-    }
-  };
+  // Reaguj na zmiany w store (np. dodanie nowego widgetu przez modal)
+  $: if (grid && $widgets) {
+    syncWithGridStack();
+  }
 </script>
 
 <div class="widget-grid-container">
   <div 
     bind:this={gridElement}
-    class="widget-grid"
+    class="grid-stack"
     class:editable={editable}
   >
     <slot />
@@ -195,56 +157,28 @@
 <style>
   .widget-grid-container {
     width: 100%;
-    min-height: 100vh;
-    padding: 1rem;
+    min-height: calc(100vh - 100px);
+    padding: 0.5rem;
   }
 
-  .widget-grid {
+  .grid-stack {
     background-color: transparent;
+    min-height: 200px;
   }
 
+  /* Stylizowanie zawartości GridStack (content wygenerowany przez Svelte) */
   :global(.grid-stack-item-content) {
     background-color: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
-    overflow: hidden;
-    transition: all var(--transition-fast);
+    transition: border-color var(--transition-fast);
   }
 
   :global(.grid-stack-item-content:hover) {
-    border-color: var(--border-hover);
-  }
-
-  :global(.grid-stack-item-removing) {
-    opacity: 0.8;
-    filter: blur(2px);
-  }
-
-  :global(.grid-stack-placeholder > .placeholder-content) {
-    background-color: var(--accent-secondary);
-    border: 2px dashed var(--accent-primary);
-    border-radius: var(--radius-lg);
-  }
-
-  :global(.grid-stack > .grid-stack-item > .grid-stack-item-content) {
-    inset: 0;
-  }
-
-  :global(.grid-stack > .grid-stack-item > .ui-resizable-handle) {
-    filter: none;
+    border-color: var(--accent-primary);
   }
 
   :global(.ui-resizable-se) {
-    width: 12px;
-    height: 12px;
-    background-color: var(--accent-primary);
-    border-radius: 2px;
-    cursor: se-resize;
-  }
-
-  @media (max-width: 640px) {
-    .widget-grid-container {
-      padding: 0.5rem;
-    }
+    filter: invert(1); /* Dopasowanie koloru uchwytu zmiany rozmiaru */
   }
 </style>
