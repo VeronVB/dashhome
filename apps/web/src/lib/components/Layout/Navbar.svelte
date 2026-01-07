@@ -1,8 +1,10 @@
+<!-- apps/web/src/lib/components/Layout/Navbar.svelte -->
+
 <script lang="ts">
   import { onMount, onDestroy, createEventDispatcher } from 'svelte';
   import { page } from '$app/stores';
   import { Search, Plus, Settings, Menu, X, Palette } from 'lucide-svelte';
-  import { openAddWidgetModal } from '$lib/stores/ui'; // Import ze stora UI
+  import { openAddWidgetModal } from '$lib/stores/ui';
   import { sidebarOpen, toggleSidebar } from '$lib/stores/sidebar';
   import { theme, setTheme, type Theme } from '$lib/stores/theme';
   import { browser } from '$app/environment';
@@ -24,7 +26,6 @@
     }
   };
 
-  // POZOSTAWIONO TYLKO JEDNĄ WERSJĘ:
   const handleAddWidget = () => {
     openAddWidgetModal();
   };
@@ -68,7 +69,7 @@
   }
 </script>
 
-<nav class="navbar">
+<nav class="navbar" class:sidebar-open={$sidebarOpen}>
   <div class="navbar-left">
     <button
       class="hamburger-btn"
@@ -155,6 +156,8 @@
   .navbar {
     position: sticky;
     top: 0;
+    left: 0;
+    width: 100%;
     z-index: 1000;
     display: flex;
     align-items: center;
@@ -164,6 +167,16 @@
     backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--border);
     gap: 1rem;
+    /* ✅ Dodaj transition dla płynnego przesuwania */
+    transition: left var(--transition-normal), width var(--transition-normal);
+  }
+
+  /* ✅ Desktop: navbar przesuwa się gdy sidebar otwarty */
+  @media (min-width: 769px) {
+    .navbar.sidebar-open {
+      left: 280px;
+      width: calc(100% - 280px);
+    }
   }
 
   .navbar-left,

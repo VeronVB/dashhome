@@ -1,3 +1,5 @@
+<!-- apps/web/src/routes/+page.svelte -->
+
 <script lang="ts">
   import WidgetGrid from '$lib/components/Grid/WidgetGrid.svelte';
   import WidgetWrapper from '$lib/components/Grid/WidgetWrapper.svelte';
@@ -6,11 +8,15 @@
   // Importy globalnych storów
   import { showAddWidgetModal, closeAddWidgetModal, openAddWidgetModal } from '$lib/stores/ui';
   import { widgets } from '$lib/stores/widgets';
+  import { sidebarOpen } from '$lib/stores/sidebar';
   
   import { apiClient } from '$lib/api/client';
   import { getWidgetDefinition } from '$lib/widgets/registry';
   import { Plus, X } from 'lucide-svelte';
   import { fade, scale } from 'svelte/transition';
+
+  // Debug: Log store changes
+  $: console.log('Widgets store updated:', $widgets);
 
   // Mapowanie typów na komponenty
   const widgetComponents: Record<string, any> = {
@@ -19,12 +25,17 @@
   };
 
   /**
-   * Dodawanie nowego widgetu przez API i aktualizacja stora
+   * Dodawanie nowego widgetu przez API i aktualizację stora
    */
   const handleAddWidget = async (type: string) => {
     try {
       const definition = getWidgetDefinition(type);
-      if (!definition) return;
+      if (!definition) {
+        console.error('Widget definition not found for type:', type);
+        return;
+      }
+
+      console.log('Creating widget of type:', type);
 
       const newWidget = await apiClient.createWidget({
         type: type as any,
@@ -37,11 +48,19 @@
         },
       });
 
+      console.log('Widget created from API:', newWidget);
+
       // Aktualizacja stora - WidgetGrid zareaguje na zmianę i doda go do siatki
-      widgets.update(current => [...current, newWidget]);
+      widgets.update(current => {
+        const updated = [...current, newWidget];
+        console.log('Store updated, new length:', updated.length);
+        return updated;
+      });
+      
       closeAddWidgetModal();
     } catch (error) {
       console.error('Failed to add widget:', error);
+      alert('Nie udało się dodać widgetu. Sprawdź konsolę.');
     }
   };
 
@@ -51,11 +70,20 @@
   const handleRemoveWidget = async (widget: any) => {
     if (!confirm('Czy na pewno chcesz usunąć ten widget?')) return;
     
+    console.log('Deleting widget:', widget.id);
+    
     try {
       await apiClient.deleteWidget(widget.id);
-      widgets.update(current => current.filter(w => w.id !== widget.id));
+      console.log('Widget deleted from API');
+      
+      widgets.update(current => {
+        const updated = current.filter(w => w.id !== widget.id);
+        console.log('Store updated after delete, new length:', updated.length);
+        return updated;
+      });
     } catch (error) {
       console.error('Failed to remove widget:', error);
+      alert('Nie udało się usunąć widgetu: ' + error.message);
     }
   };
 
@@ -68,7 +96,7 @@
   <title>Dashboard - Personal All-in-One</title>
 </svelte:head>
 
-<div class="dashboard-container">
+<div class="dashboard-container" class:sidebar-open={$sidebarOpen}>
   <WidgetGrid>
     {#each $widgets as widget (widget.id)}
       <div 
@@ -87,9 +115,7 @@
           >
             {#if widgetComponents[widget.type]}
               <svelte:component 
-                this={widgetComponents[widget.type]} 
-                widgetId={widget.id}
-                config={widget.config}
+                this={widgetComponents[widget.type]}
               />
             {:else}
               <div class="widget-placeholder">
@@ -141,8 +167,10 @@
 
 <style>
   .dashboard-container {
-    min-height: calc(100vh - 64px);
+    /*min-height: calc(100vh - 64px);*/
+    width: 100%;
     position: relative;
+    /* GridStack automatycznie dostosuje się do nowej szerokości */
   }
 
   /* Styl dla zawartości GridStack - ważne dla zachowania layoutu */
@@ -247,7 +275,7 @@
 
   .floating-add-btn {
     position: fixed;
-    bottom: 2rem;
+    bottom: 3.5rem;
     right: 2rem;
     width: 56px;
     height: 56px;
