@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  api:
+    image: registry.home.arpa/dashboard-api:latest
+    container_name: dashboard-api
+    restart: unless-stopped
+    networks:
+      - netbird
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_HOST=redis.home.arpa
+      - REDIS_PORT=6379
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  web:
+    image: registry.home.arpa/dashboard-web:latest
+    container_name: dashboard-web
+    restart: unless-stopped
+    networks:
+      - netbird
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  netbird:
+    external: true
