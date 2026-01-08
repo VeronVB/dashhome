@@ -8,6 +8,7 @@
     BarChart3, Terminal, X 
   } from 'lucide-svelte';
   import { sidebarOpen } from '$lib/stores/sidebar';
+  import { editMode, toggleEditMode } from '$lib/stores/editMode';
   import { fade } from 'svelte/transition';
 
   interface NavItem {
@@ -98,6 +99,17 @@
       </div>
     {/each}
   </nav>
+  <!-- Edit Mode Toggle -->
+  <div class="edit-mode-section">
+    <button 
+      class="edit-mode-btn"
+      on:click={toggleEditMode}
+      class:active={$editMode}
+    >
+      <Edit3 size={20} />
+      <span>{$editMode ? 'Wyłącz tryb edycji' : 'Włącz tryb edycji'}</span>
+    </button>
+  </div>
 
   <div class="sidebar-footer">
     <div class="user-info">

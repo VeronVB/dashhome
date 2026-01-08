@@ -11,7 +11,7 @@
   import type { PiHoleStats } from '$lib/api/client';
   import { ShieldCheck, ShieldOff, Globe, Ban, Clock } from 'lucide-svelte';
   import { fade } from 'svelte/transition';
-  import { CircularProgress } from '$lib/components/UI/CircularProgress.svelte';
+  import CircularProgress from '$lib/components/UI/CircularProgress.svelte';
 
   export let widgetId: string;
 

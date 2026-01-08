@@ -7,7 +7,9 @@
   import Footer from '$lib/components/Layout/Footer.svelte';
   import { sidebarOpen } from '$lib/stores/sidebar';
   import { page } from '$app/stores';
-
+  
+  export let data;
+  export let params;
   $: if ($page.url.pathname && typeof window !== 'undefined' && window.innerWidth < 769) {
     sidebarOpen.set(false);
   }

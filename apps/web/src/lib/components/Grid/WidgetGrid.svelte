@@ -12,6 +12,7 @@
 
   export let options: Partial<GridStackOptions> = {};
   export let editable = true;
+  export let editMode = true;
 
   const dispatch = createEventDispatcher();
   let grid: GridStack | null = null;
@@ -31,6 +32,8 @@
     dragIn: '.newWidget',
     resizable: { handles: 'se' },
     draggable: { handle: '.widget-drag-handle' },
+    disableDrag: !editMode,
+    disableResize: !editMode,
     ...options,
   };
 
@@ -61,6 +64,14 @@
     saveTimeout = setTimeout(saveWidgetLayout, 2000);
 
     dispatch('change', { items });
+  };
+  
+  const handleAdded = (event: GridStackEvent, items: GridStackWidget[]) => {
+    dispatch('added', { items });
+  };
+
+  const handleRemoved = (event: GridStackEvent, items: GridStackWidget[]) => {
+    dispatch('removed', { items });
   };
 
   const saveWidgetLayout = async () => {
@@ -133,6 +144,8 @@
     // ✅ DOPIERO TERAZ włączamy event listener (po pełnej inicjalizacji)
     isInitialized = true;
     grid.on('change', handleChange);
+    grid.on('added', handleAdded);
+    grid.on('removed', handleRemoved);
 
     // Responsywność kolumn
     const updateColumnCount = () => {
@@ -148,6 +161,8 @@
       window.removeEventListener('resize', updateColumnCount);
       if (grid) {
         grid.off('change', handleChange);
+        grid.off('added', handleAdded);
+        grid.off('removed', handleRemoved);
         grid.destroy(false);
       }
     };

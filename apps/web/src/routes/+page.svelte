@@ -4,6 +4,9 @@
   import WidgetGrid from '$lib/components/Grid/WidgetGrid.svelte';
   import WidgetWrapper from '$lib/components/Grid/WidgetWrapper.svelte';
   import SystemStats from '$lib/widgets/SystemStats.svelte';
+  import PiholeStats from '$lib/widgets/PiholeStats.svelte';
+  import QBittorrentStats from '$lib/widgets/QBittorrentStats.svelte';
+  import InfluxDBGraph from '$lib/widgets/InfluxDBGraph.svelte';
   
   // Importy globalnych storów
   import { showAddWidgetModal, closeAddWidgetModal, openAddWidgetModal } from '$lib/stores/ui';
@@ -15,12 +18,17 @@
   import { Plus, X } from 'lucide-svelte';
   import { fade, scale } from 'svelte/transition';
 
+  export let data;
+  export let params;
   // Debug: Log store changes
   $: console.log('Widgets store updated:', $widgets);
 
   // Mapowanie typów na komponenty
   const widgetComponents: Record<string, any> = {
     'system-stats': SystemStats,
+    'pihole-stats': PiholeStats,
+    'qbittorrent-stats': QBittorrentStats,
+    'influxdb-graph': InfluxDBGraph,
     // Tutaj dodaj kolejne: 'docker-quick', 'pihole-stats' itp.
   };
 
@@ -116,6 +124,7 @@
             {#if widgetComponents[widget.type]}
               <svelte:component 
                 this={widgetComponents[widget.type]}
+                widgetId={widget.id}
               />
             {:else}
               <div class="widget-placeholder">
@@ -131,8 +140,15 @@
   </WidgetGrid>
 
   {#if $showAddWidgetModal}
-    <div class="modal-overlay" transition:fade={{ duration: 150 }} on:click|self={closeAddWidgetModal}>
-      <div class="modal-content" transition:scale={{ duration: 200, start: 0.95 }}>
+        <div 
+           class="modal-overlay" 
+           transition:fade={{ duration: 150 }} 
+           on:click|self={closeAddWidgetModal}
+           on:keydown={(e) => e.key === 'Escape' && closeAddWidgetModal()}
+           role="dialog"
+           aria-modal="true"
+        >      
+        <div class="modal-content" transition:scale={{ duration: 200, start: 0.95 }}>
         <div class="modal-header">
           <h3>Dodaj nowy widget</h3>
           <button class="close-btn" on:click={closeAddWidgetModal}>

@@ -22,6 +22,7 @@
   import { Activity, TrendingUp, Settings } from 'lucide-svelte';
   import { fade } from 'svelte/transition';
   import { apiClient } from '$lib/api/client';
+  import { scale } from 'svelte/transition';
 
   ChartJS.register(
     CategoryScale,
@@ -258,7 +259,14 @@
 
 <!-- Settings Modal -->
 {#if showSettings}
-  <div class="settings-overlay" transition:fade on:click={() => showSettings = false}>
+    <div 
+      class="settings-overlay" 
+      transition:fade 
+      on:click={() => showSettings = false}
+      on:keydown={(e) => e.key === 'Escape' && (showSettings = false)}
+      role="button"
+      tabindex="0"
+    >
     <div class="settings-modal" transition:scale on:click|stopPropagation>
       <div class="settings-header">
         <h4>Ustawienia wykresu</h4>
