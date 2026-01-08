@@ -25,7 +25,7 @@
     column: 12,
     minRow: 1,
     animate: true,
-    float: false, // ✅ ZMIANA: false zapobiega auto-compacting podczas init
+    float: true, // ✅ ZMIANA: false zapobiega auto-compacting podczas init
     disableOneColumnMode: true,
     acceptWidgets: true,
     dragIn: '.newWidget',
@@ -172,28 +172,115 @@
 <style>
   .widget-grid-container {
     width: 100%;
-    /*min-height: auto;*/
     padding: 0.5rem;
   }
 
   .grid-stack {
     background-color: transparent;
     min-height: 200px;
+    overflow: visible !important; 
   }
 
-  /* Stylizowanie zawartości GridStack (content wygenerowany przez Svelte) */
-  :global(.grid-stack-item-content) {
+  /* --- STYLIZACJA CIENIA (PLACEHOLDERA) --- */
+  
+  /* Kontener cienia */
+  :global(.grid-stack-item.grid-stack-placeholder) {
+    opacity: 1 !important;
+    z-index: 0 !important;
+  }
+
+  /* Wnętrze cienia - agresywne nadpisanie kolorów */
+  :global(.grid-stack-item.grid-stack-placeholder > .grid-stack-item-content) {
+    background-color: var(--accent-secondary) !important; /* Twoje tło akcentu */
+    background-image: none !important;
+    border: 2px dashed var(--accent-primary) !important;
+    border-radius: var(--radius-lg) !important;
+    opacity: 0.4 !important;
+    box-shadow: none !important;
+    visibility: visible !important;
+  }
+
+  /* Ukrywamy rzeczywistą zawartość widgetu wewnątrz cienia, by nie "prześwitywała" */
+  :global(.grid-stack-placeholder > .grid-stack-item-content *) {
+    visibility: hidden !important;
+  }
+
+ :global(.grid-stack-item-content) {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: all var(--transition-fast);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+
+  :global(.grid-stack-item-content:hover) {
+    border-color: var(--border-hover);
+  }
+
+  :global(.grid-stack-item-removing) {
+    opacity: 0.8;
+    filter: blur(2px);
+  }
+
+  :global(.grid-stack-placeholder > .placeholder-content) {
+    background-color: var(--accent-secondary);
+    border: 2px dashed var(--accent-primary);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 0 20px var(--accent-primary);
+  }
+
+  :global(.grid-stack > .grid-stack-item > .grid-stack-item-content) {
+    inset: 0;
+  }
+
+  :global(.grid-stack > .grid-stack-item > .ui-resizable-handle) {
+    filter: none;
+  }
+
+  :global(.ui-resizable-se) {
+    width: 12px;
+    height: 12px;
+    background-color: var(--accent-primary);
+    border-radius: 2px;
+    cursor: se-resize;
+  }
+
+  /* Fix for drag shadow issue */
+  :global(.grid-stack-item-dragging) {
+    opacity: 0.9;
+    z-index: 1000;
+  }
+
+  :global(.grid-stack-item-dragging > .grid-stack-item-content) {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+    transform: rotate(2deg);
+    transition: none;
+  }
+
+  :global(.grid-stack > .grid-stack-item.grid-stack-placeholder) {
+    opacity: 1;
+  }
+
+  :global(.grid-stack > .grid-stack-item.grid-stack-placeholder > .grid-stack-item-content) {
+    border: 2px dashed var(--accent-primary);
+    background-color: var(--accent-secondary);
+  }
+  
+  :global(.grid-stack-item > .grid-stack-item-content) {
     background-color: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     transition: border-color var(--transition-fast);
+    overflow: hidden;
   }
 
-  :global(.grid-stack-item-content:hover) {
+  :global(.grid-stack-item > .grid-stack-item-content:hover) {
     border-color: var(--accent-primary);
   }
 
   :global(.ui-resizable-se) {
     filter: invert(1);
+    z-index: 100 !important;
   }
 </style>
