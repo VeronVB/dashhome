@@ -5,7 +5,7 @@
   import { 
     Home, Package, Server, ShieldCheck, 
     Download, FileText, Settings, User, 
-    BarChart3, Terminal, X 
+    BarChart3, Terminal, Edit3, X 
   } from 'lucide-svelte';
   import { sidebarOpen } from '$lib/stores/sidebar';
   import { editMode, toggleEditMode } from '$lib/stores/editMode';
@@ -256,6 +256,42 @@
     flex-shrink: 0;
   }
 
+  .edit-mode-section {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border);
+    background-color: var(--bg-secondary);
+  }
+
+  .edit-mode-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    font-size: 0.875rem;
+  }
+
+  .edit-mode-btn:hover {
+    color: var(--text-primary);
+    background-color: var(--bg-hover);
+  }
+
+  .edit-mode-btn.active {
+    color: var(--accent-primary);
+    background-color: var(--accent-secondary);
+    border-color: var(--accent-primary);
+  }
+
+  .edit-mode-btn :global(svg) {
+    flex-shrink: 0;
+  }
+  
   .sidebar-footer {
     padding: 1rem 1.5rem;
     border-top: 1px solid var(--border);

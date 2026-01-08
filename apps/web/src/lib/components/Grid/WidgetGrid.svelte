@@ -12,7 +12,7 @@
 
   export let options: Partial<GridStackOptions> = {};
   export let editable = true;
-  export let editMode = true;
+  export let editMode = false;
 
   const dispatch = createEventDispatcher();
   let grid: GridStack | null = null;
